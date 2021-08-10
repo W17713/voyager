@@ -6,23 +6,26 @@ import os
 import platform
 
 class Remoteserver:
-    def __init__(self,host,port):
+    def __init__(self,host,port,username,password):
         self.host=host
         self.port=port
+        self.username=username
+        self.password=password
     
-    def ping():
+    def ping(self):
         try:
             output=subprocess.run('ping '+self.host,check=True)
             retcode=output.returncode
+            return True,retcode
         except CalledProcessError as cpe:
             retcode=cpe.returncode
-        return retcode
+            return False,retcode
     
-    def connect(username,password):
+    def connect(self):
         try:
             ssh=paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.host,self.port,username,password)
+            ssh.connect(self.host,self.port,self.username,self.password)
             stdin,stdout,stderr=ssh.exec_command('uname -a')
             #output=subprocess.run('ssh '+username+'@'+self.host) #ps605332.dreamhostps.com
             output=stdout.readlines()  
@@ -31,10 +34,10 @@ class Remoteserver:
             return False,se
         
     
-    def checkftp(username,password):
+    def checkftp(self):
         try:
             transport=paramiko.Transport(self.host,self.port)
-            transport.connect(None,username,password)
+            transport.connect(None,self.username,self.password)
             sftp = paramiko.SFTPClient.from_transport(transport)
             curdir=os.getcwd()
             remotedir=sftp.getcwd()
@@ -46,11 +49,12 @@ class Remoteserver:
             if transport:
                 transport.close()
             ret = True
+            return ret,'successful'
         except socket.error as se:
             ret=False
-        return ret
+            return ret,se
     
-    def checkmyENV():
+    def checkmyENV(self):
         ENV={}
         os=platform.platform()
         ENV['os']=os
@@ -61,6 +65,8 @@ class Remoteserver:
             ENV['pyversion']='n/a'
         return ENV
         
+    def deployPackage():
+        print('Package deploying....')
 
             
 
