@@ -9,33 +9,41 @@ def addIPs():
     print('2.Add random IPs from IP list\n')
     stepone=input()
     if stepone==str(1):
-        print('1.Add IP range as follows FirstNodeIP-LastNodeID e.g 10.249.249.10-20\n')
+        print('Add IP range as follows FirstNodeIP-LastNodeID e.g 10.249.249.10-20\n')
         steponeInput=input()
         steponeOut=execution_seq.addIPrange(steponeInput)
         if steponeOut=='successful':
             print('IP range was added succesfully\n')
     elif stepone==str(2):
-        print('1.Add all IPs in IPlist.txt file in assets/IPlistfile.txt\n')
+        print('Add each IP address on a newline. Press enter to proceed to add next IP\nInput \"done\" when you are done adding IPlist\n')
+        iplist=[]
         steptwoInput=input()
-        steptwoOut=execution_seq.addIPrange(steptwoInput)
-        if steponeOut=='successful':
-            print('IP range was added succesfully\n')
+        while steptwoInput != 'done':
+            if steptwoInput !='\n':
+                iplist.append(steptwoInput)
+                steptwoInput=input()
+        steptwoOut=execution_seq.addIPrandom(iplist)
+        if steptwoOut=='successful':
+            print('IPs were added succesfully\n')
     return execution_seq.getIPs()
 def getCredentials():
     print('Please enter the username for servers\n')
-    username=input()
+    username=input().strip()
     print('Please enter the password for servers\n')
-    password=input()
+    password=input().strip()
     return username,password
 
 def remoteTests(username,password):
     iplist=execution_seq.getIPs()
     for i in iplist:
         print('Running tests on remote servers now\n')
-        rms=Remoteserver(i,22,username,password)
+        rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
         pingstatus,pingout=rms.ping()
+        print(pingstatus)
         sshstatus,sshout=rms.connect()
+        print(sshstatus)
         sftpstatus,sftpout=rms.checkftp()
+        print(sftpstatus)
         if pingstatus:
             print('ping test completed successfully\n')
         if sshstatus:
@@ -48,16 +56,13 @@ def remoteTests(username,password):
 
 def shipPackage():
     print('All tests passed. Do you want to deploy package? (Y/N)')
-    answer=lower(input())
+    answer=input().lower()
     answerOptions=['Yes','No']
-    answers=[]
-    yesanswers=[]
-    noanswers=[]
-    answers.append(yesanswers)
-    answers.append(noanswers)
+    answers=[[],[]] #list os lists to store variations or yes and no
     for h,i in enumerate(answerOptions):
         answers[h].append(i)
         answers[h].append(i[0])
+        answers[h].append(i[0].lower())
         answers[h].append(i.lower())
         answers[h].append(i.upper())
     if answer in answers[0]: #if answer is any form of yes [upper,lower,Y,Capitalized]
@@ -75,7 +80,7 @@ def shipPackage():
         if lastresponse in answers[0]:
             Remoteserver.deployPackage()
         elif lastresponse in answers[1]:
-            Remoteserver.deployPackage()
+            print('Not deploying package')
         else:
             sys.exit()
 

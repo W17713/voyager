@@ -15,7 +15,7 @@ def addIPrange(IPstring):
 def addIPrandom(IPlist):
     currentdir=os.getcwd()
     with open(os.path.join(currentdir,IPlistfile),'w+') as ipsfile:
-        for i in range(len(IPlist)):
+        for i in IPlist:
             ipsfile.write(i+'\n')
     return 'successful'
 
