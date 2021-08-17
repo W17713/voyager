@@ -26,6 +26,7 @@ def addIPs():
         if steptwoOut=='successful':
             print('IPs were added succesfully\n')
     return execution_seq.getIPs()
+
 def getCredentials():
     print('Please enter the username for servers\n')
     username=input().strip()
@@ -39,20 +40,27 @@ def remoteTests(username,password):
         print('Running tests on remote servers now\n')
         rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
         pingstatus,pingout=rms.ping()
-        print(pingstatus)
-        sshstatus,sshout=rms.connect()
-        print(sshstatus)
-        sftpstatus,sftpout=rms.checkftp()
-        print(sftpstatus)
+        print(pingout)
         if pingstatus:
             print('ping test completed successfully\n')
-        if sshstatus:
-            print('ssh test completed successfully\n')
-        if sftpstatus:
-            print('sftp test completed successfully\n')
-    if pingstatus and sshstatus and sftpstatus == True:
-        return True
-    return False
+            sshstatus,sshout=rms.runcommand()
+            print(sshout)
+            if sshstatus:
+                print('ssh test completed successfully\n')
+                sftpstatus,sftpout=rms.sftpcheck()
+                print(sftpout)
+                if sftpstatus:
+                    print('sftp test completed successfully\n')
+                    if pingstatus and sshstatus and sftpstatus == True:
+                        return True,'success'
+                else:
+                    error='could not transfer files to host'
+            else:
+                error='Could not ssh into host'
+        else:
+            error='Could not ping host'
+    print(error)
+    return False,error
 
 def shipPackage():
     print('All tests passed. Do you want to deploy package? (Y/N)')
@@ -66,7 +74,11 @@ def shipPackage():
         answers[h].append(i.lower())
         answers[h].append(i.upper())
     if answer in answers[0]: #if answer is any form of yes [upper,lower,Y,Capitalized]
-        Remoteserver.deployPackage()
+        iplist=execution_seq.getIPs()
+        for i in iplist:
+            print('Deploying package to remote servers now\n')
+            rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
+            rms.deployPackage()
     elif answer in answers[1]: #if answer is any form on no
         print('All tests completed successfully. Enter a yes to proceed or q to quit.\n')
         response=input()
@@ -90,7 +102,7 @@ if __name__=="__main__":
     IPs=addIPs()
     if len(IPs) !=0:
         username,password=getCredentials()
-        testresults=remoteTests(username,password)
+        testresults,msg=remoteTests(username,password)
     if testresults:
         shipPackage()
     else:

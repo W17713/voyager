@@ -5,6 +5,7 @@ import paramiko
 import socket
 import os
 import platform
+from Package import Pkg as pkg2deploy
 
 class Remoteserver:
     def __init__(self,host,port,username,password):
@@ -14,7 +15,7 @@ class Remoteserver:
         self.password=password
     
     def ping(self):
-        output=subprocess.run('ping '+self.host,capture_output=True,check=True)
+        #output=subprocess.run('ping '+self.host,capture_output=True,check=True)
         try:
             output=subprocess.run('ping '+self.host,capture_output=True,check=True)
             retcode=output.returncode
@@ -24,59 +25,113 @@ class Remoteserver:
             return False,retcode
         return True,output
     
-    def connect(self):
+    def connectssh(self):
+        ssh=paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        return ssh       
+
+    
+    def runcommand(self,cmd='uname -a'):
         try:
-            ssh=paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh=self.connectssh()
             ssh.connect(self.host,self.port,self.username,self.password)
-            stdin,stdout,stderr=ssh.exec_command('uname -a')
-            #output=subprocess.run('ssh '+username+'@'+self.host) 
-            output=stdout.readlines()  
+            stdin,stdout,stderr=ssh.exec_command(cmd)
+            output=stdout.readlines()
             return True,output
-        except socket.error as se:
+        except Exception as se:
             print(se)
             return False,se
         
+
     
-    def checkftp(self):
+    def connectsftp(self):
+        transport=paramiko.Transport(self.host,self.port)
+        transport.connect(None,self.username,self.password)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        return transport,sftp
+        
+    
+    def sftpcheck(self):
         try:
-            transport=paramiko.Transport(self.host,self.port)
-            transport.connect(None,self.username,self.password)
-            sftp = paramiko.SFTPClient.from_transport(transport)
+            transport,sftp=self.connectsftp()
             curdir=os.getcwd()
             sftp.chdir('/home/'+self.username+'/Maildir/cur')
             remotedir=sftp.getcwd()
             print('remotedir below ')
             testfilename='asset\onefile.txt'
-            fileattributes=sftp.put(os.path.join(curdir,testfilename),os.path.join(remotedir,'onefile.txt'),callback=None,confirm=True)
+            fileattributes=sftp.put(os.path.join(curdir,testfilename),remotedir+'/onefile.txt')
             print(remotedir)
             if fileattributes.st_uid:
-                sftp.remove(os.path.join(remotedir,'onefile.txt'))
+                sftp.remove(remotedir+'/onefile.txt')
             if sftp:
                 sftp.close()
             if transport:
                 transport.close()
-            ret = True
-            return ret,'successful'
-        except socket.error as se:
+            return True,'successful'
+        except Exception as se:
             print('subprocess error')
             print(se)
-            ret=False
-            return ret,se
-    
+            return False,se
+
+
     def checkmyENV(self):
         ENV={}
+        checks={'pyversion':'python --version','d2uversion':'dos2unix --version','bashversion':'bash --version'}
         os=platform.platform()
         ENV['os']=os
         try:
-            pyversion=subprocess.run('python --version')
-            ENV['pyversion']=pyversion.stdout
+            for i,j in checks.items():
+                stin,stout,sterr=self.runcommand(j)
+                ENV[i]=stout
         except CalledProcessError as cpe:
             ENV['pyversion']='n/a'
         return ENV
         
-    def deployPackage():
-        print('Package deploying....')
+    def deployPackage(self):
+        #transfer package from local machine to remote machine
+        transport,sftp=self.connectsftp()
+        curdir=os.getcwd()
+        script=pkg2deploy('script')
+        scriptattr=script.getprops()
+        scriptname=scriptattr['name']
+        print(scriptname)
+        scriptsize=scriptattr['size']
+        print(scriptsize)
+        pkg2d=pkg2deploy('pkg')
+        pkg=pkg2d.getprops()
+        loadscriptpath='script\loaderscript.sh'
+        sftp.chdir('/home/'+self.username+'/Maildir/cur')
+        remotedir=sftp.getcwd()
+        print(remotedir)
+        rmloadfile=os.path.join(remotedir,'loaderscript.txt')
+        print(rmloadfile)
+        #upload package and helper scripts to remote machine 
+        try:
+            scriptattr=sftp.put(os.path.join(curdir,loadscriptpath),remotedir+'/loaderscript.sh')
+        except Exception as sftpexp:
+            print(sftpexp)
+        loadscriptsize=sftp.lstat(os.path.join(remotedir,'loaderscript.sh')).st_size
+        print(loadscriptsize)
+        '''if scriptattr.st_size == loadscriptsize:
+            sftp.chmod(rmloadfile,777)
+            pkgattributes=sftp.put(os.path.join(curdir,scriptattr['name']),os.path.join(remotedir,scriptattr['name']))
+        if sftp:
+            sftp.close()
+        if transport:
+            sftp.close()
+        operationlist=['sh '+rmloadfile]'''
+        '''if pkgattributes.st_size == pkg['size']: #size of local file equal remote file size if transfer was successful
+            #ssh to remote machine to unzip
+            for op in operationlist:
+                self.runcommand(op)'''
+
+    
+    def cleanENV(self):
+        operationlist=['']
+        for op in operationlist:
+            self.runcommand(op)
+
+
 
             
 
