@@ -2,6 +2,7 @@
 import execution_seq
 from Remoteserver import Remoteserver
 import sys
+import os
 
 def addIPs():
     print('Welcome to voyager.\nChoose an option to add IPs\n')
@@ -62,7 +63,23 @@ def remoteTests(username,password):
     print(error)
     return False,error
 
-def shipPackage():
+def choosePackage():
+    packages=os.listdir(os.path.join(os.getcwd(),'pkg'))
+    options=[]
+    for i,p in enumerate(packages):
+        options.append(i+1)
+        print(str(i+1)+'. '+p)
+    print(options)
+    inp=0
+    option=int(input('Choose package\n'))
+    if option in options or inp in options:
+        chosenpkg=packages[option-1]
+    else:
+        inp=input('Choose package again. Your option is not in the list\n')
+        
+    return chosenpkg
+
+def shipPackage(pkg):
     print('All tests passed. Do you want to deploy package? (Y/N)')
     answer=input().lower()
     answerOptions=['Yes','No']
@@ -104,7 +121,8 @@ if __name__=="__main__":
         username,password=getCredentials()
         testresults,msg=remoteTests(username,password)
     if testresults:
-        shipPackage()
+        pkg=choosePackage()
+        shipPackage(pkg)
     else:
         print('Tests failed')
 
