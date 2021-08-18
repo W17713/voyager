@@ -93,37 +93,33 @@ class Remoteserver:
         curdir=os.getcwd()
         script=pkg2deploy('script')
         scriptattr=script.getprops()
-        scriptname=scriptattr['name']
-        print(scriptname)
-        scriptsize=scriptattr['size']
-        print(scriptsize)
         pkg2d=pkg2deploy('pkg')
         pkg=pkg2d.getprops()
         loadscriptpath='script\loaderscript.sh'
+        pkgpath=os.path.join(curdir,'pkg')
         sftp.chdir('/home/'+self.username+'/Maildir/cur')
         remotedir=sftp.getcwd()
-        print(remotedir)
-        rmloadfile=os.path.join(remotedir,'loaderscript.txt')
-        print(rmloadfile)
+        rmloadfile=remotedir+'/loaderscript.sh'
         #upload package and helper scripts to remote machine 
         try:
-            scriptattr=sftp.put(os.path.join(curdir,loadscriptpath),remotedir+'/loaderscript.sh')
+            sftp.put(os.path.join(curdir,loadscriptpath),rmloadfile)
         except Exception as sftpexp:
             print(sftpexp)
-        loadscriptsize=sftp.lstat(os.path.join(remotedir,'loaderscript.sh')).st_size
+        loadscriptsize=sftp.lstat(rmloadfile).st_size
         print(loadscriptsize)
-        '''if scriptattr.st_size == loadscriptsize:
-            sftp.chmod(rmloadfile,777)
-            pkgattributes=sftp.put(os.path.join(curdir,scriptattr['name']),os.path.join(remotedir,scriptattr['name']))
+        if scriptattr['size'] == loadscriptsize:
+            pkgattributes=sftp.put(os.path.join(pkgpath,pkg['name']),remotedir+'/'+pkg['name'])
         if sftp:
             sftp.close()
         if transport:
             sftp.close()
-        operationlist=['sh '+rmloadfile]'''
-        '''if pkgattributes.st_size == pkg['size']: #size of local file equal remote file size if transfer was successful
+        operationlist=['chmod +x '+rmloadfile,'cd '+remotedir+';sh loaderscript.sh']
+        if pkgattributes.st_size == pkg['size']: #size of local file equal remote file size if transfer was successful
             #ssh to remote machine to unzip
             for op in operationlist:
-                self.runcommand(op)'''
+                print(op)
+                status,stout=self.runcommand(op)
+                print(stout)
 
     
     def cleanENV(self):
