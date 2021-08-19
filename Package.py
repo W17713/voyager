@@ -2,16 +2,17 @@ import paramiko
 import subprocess
 import os
 import platform
+import ntpath
 
 
 class Pkg:
-    def __init__(self,packagename):
-        curdir=os.getcwd()
-        pkgpath=os.path.join(curdir,packagename)
-        pkg=os.listdir(pkgpath)
-        self.packagename=pkg[0]
-        fp=os.path.join(pkgpath,self.packagename)
-        self.packagesize=os.stat(fp).st_size
+    def __init__(self,packagepath):
+        #curdir=os.getcwd()
+        #pkgpath=os.path.join(curdir,packagepath)
+        self.packagepath=packagepath
+        self.packagesize=os.stat(packagepath).st_size
+        self.packagename=ntpath.basename(packagepath)
+        #self.packagesize=os.stat(pkgpath).st_size
     
     def checkpkgENV(self):
         ENV={}
@@ -42,6 +43,7 @@ class Pkg:
     
     def getprops(self): 
         pkgprops={}
+        pkgprops['path']=self.packagepath
         pkgprops['name']=self.packagename
         pkgprops['size']=self.packagesize
         #get package name

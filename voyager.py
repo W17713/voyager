@@ -95,19 +95,19 @@ def shipPackage(pkg):
         for i in iplist:
             print('Deploying package to remote servers now\n')
             rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
-            rms.deployPackage()
+            rms.deployPackage(pkg)
     elif answer in answers[1]: #if answer is any form on no
         print('All tests completed successfully. Enter a yes to proceed or q to quit.\n')
         response=input()
         if response in answers[0]:
-            Remoteserver.deployPackage()
+            Remoteserver.deployPackage(pkg)
         elif response=='q':
             sys.exit()
     else:
         print('Please enter a Yes/No.\n')
         lastresponse=input()
         if lastresponse in answers[0]:
-            Remoteserver.deployPackage()
+            Remoteserver.deployPackage(pkg)
         elif lastresponse in answers[1]:
             print('Not deploying package')
         else:
