@@ -6,17 +6,16 @@ import os
 
 def addIPs():
     print('Welcome to voyager.\nChoose an option to add IPs\n')
-    print('1.Add IP range\n')
-    print('2.Add random IPs from IP list\n')
+    print('1.Add range of IPs\n')
+    print('2.Add non range hosts from list\n')
     stepone=input()
     if stepone==str(1):
-        print('Add IP range as follows FirstNodeIP-LastNodeID e.g 10.249.249.10-20\n')
-        steponeInput=input()
+        steponeInput=input('Add IP range as follows FirstNodeIP-LastNodeID e.g 10.249.249.10-20\n')
         steponeOut=execution_seq.addIPrange(steponeInput)
         if steponeOut=='successful':
             print('IP range was added succesfully\n')
     elif stepone==str(2):
-        print('Add each IP address on a newline. Press enter to proceed to add next IP\nInput \"done\" when you are done adding IPlist\n')
+        print('Add each hostname or IP address on a newline. Press enter to proceed to add next IP\nInput \"done\" when you are done adding hosts\n')
         iplist=[]
         steptwoInput=input()
         while steptwoInput != 'done':
@@ -29,10 +28,8 @@ def addIPs():
     return execution_seq.getIPs()
 
 def getCredentials():
-    print('Please enter the username for servers\n')
-    username=input().strip()
-    print('Please enter the password for servers\n')
-    password=input().strip()
+    username=input('Please enter the username for servers\n').strip()
+    password=input('Please enter the password for servers\n').strip()
     return username,password
 
 def remoteTests(username,password):
@@ -41,15 +38,15 @@ def remoteTests(username,password):
         print('Running tests on remote servers now\n')
         rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
         pingstatus,pingout=rms.ping()
-        print(pingout)
+        #print(pingout)
         if pingstatus:
             print('ping test completed successfully\n')
             sshstatus,sshout=rms.runcommand()
-            print(sshout)
+            print('Remote System Info: '+sshout[0])
             if sshstatus:
                 print('ssh test completed successfully\n')
                 sftpstatus,sftpout=rms.sftpcheck()
-                print(sftpout)
+                #print(sftpout)
                 if sftpstatus:
                     print('sftp test completed successfully\n')
                     if pingstatus and sshstatus and sftpstatus == True:
@@ -66,12 +63,13 @@ def remoteTests(username,password):
 def choosePackage():
     packages=os.listdir(os.path.join(os.getcwd(),'pkg'))
     options=[]
+    print('All tests passed. Choose package to deploy\n')
     for i,p in enumerate(packages):
         options.append(i+1)
         print(str(i+1)+'. '+p)
-    print(options)
+    #print(options)
     inp=0
-    option=int(input('Choose package\n'))
+    option=int(input())
     if option in options or inp in options:
         chosenpkg=packages[option-1]
     else:
@@ -80,8 +78,7 @@ def choosePackage():
     return chosenpkg
 
 def shipPackage(pkg):
-    print('All tests passed. Do you want to deploy package? (Y/N)')
-    answer=input().lower()
+    answer=input('Do you want to deploy package? (Y/N)').lower()
     answerOptions=['Yes','No']
     answers=[[],[]] #list os lists to store variations or yes and no
     for h,i in enumerate(answerOptions):
@@ -97,15 +94,13 @@ def shipPackage(pkg):
             rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
             rms.deployPackage(pkg)
     elif answer in answers[1]: #if answer is any form on no
-        print('All tests completed successfully. Enter a yes to proceed or q to quit.\n')
-        response=input()
+        response=input('Enter a yes to deploy package or q to quit.\n')
         if response in answers[0]:
             Remoteserver.deployPackage(pkg)
         elif response=='q':
             sys.exit()
     else:
-        print('Please enter a Yes/No.\n')
-        lastresponse=input()
+        lastresponse=input('Please enter a Yes/No.\n')
         if lastresponse in answers[0]:
             Remoteserver.deployPackage(pkg)
         elif lastresponse in answers[1]:
