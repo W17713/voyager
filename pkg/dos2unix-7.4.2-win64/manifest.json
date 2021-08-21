@@ -1,0 +1,1 @@
+{"init": "start.sh", "rollback":"rollback.sh","verification":"verification.sh","cleanenv":"clean.sh"}

@@ -3,7 +3,7 @@ import re
 import os
 import json
 
-IPlistfile='asset\IPlist.txt'
+IPlistfile='asset/IPlist.txt'
 def addIPrange(IPstring):
     IP=re.search(r'(\d*\.\d*\.\d*\.)(\d*)-(\d*)',IPstring) #[\d*]
     netsegment=IP[1]

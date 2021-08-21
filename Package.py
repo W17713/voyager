@@ -1,8 +1,9 @@
+import json
 import paramiko
 import subprocess
 import os
 import platform
-import ntpath
+#import ntpath
 
 
 class Pkg:
@@ -11,7 +12,7 @@ class Pkg:
         #pkgpath=os.path.join(curdir,packagepath)
         self.packagepath=packagepath
         self.packagesize=os.stat(packagepath).st_size
-        self.packagename=ntpath.basename(packagepath)
+        self.packagename=os.path.basename(packagepath)
         #self.packagesize=os.stat(pkgpath).st_size
     
     def checkpkgENV(self):
@@ -30,14 +31,17 @@ class Pkg:
     def box(self):
         #zip package
         cwd=os.getcwd()
-        pkg=os.path.join(cwd,'pkg/'+self.packagename)
+        pkgpath=os.path.join(cwd,'pkg')
+        pkg=os.path.join(pkgpath,self.packagename)
         filestats=os.stat(pkg)
         self.packagesize=filestats/(1024*1024)
         
         pkgenvironment=self.checkpkgENV()
         if pkgenvironment['os'].lower() == 'linux':
+            os.chdir(pkgpath)
             subprocess.run('tar -zcvf '+self.packagename+'.tar.gz '+pkg,capture_output=True)
         elif pkgenvironment['os'].lower() == 'windows':
+            os.chdir(pkgpath)
             subprocess.run('compact /c '+pkg+' /I /Q')
             #run windows archiving
     
@@ -52,10 +56,21 @@ class Pkg:
     def preppkg(self):
         #run dos2unix on scripts before deploying 
         curdir=os.getcwd()
-        winexecpath=os.path.join(curdir,'dependency/dos2unix/dos2unix.exe')
-        pkgpath=os.path.join(curdir,'script/loaderscript.sh')
+        manifestpath=os.path.join(curdir,'pkg/'+self.packagename+'/manifest.json')
+        if os.path.isfile(manifestpath):
+            with open(manifestpath,'r') as manifestfile:
+                manifest=json.load(manifestfile)
+        else:
+            scriptname=input('Enter name of first script to run\n')
+            manifest={'init':[scriptname]}
+            with open(manifestpath,'w') as manifestfile:
+                json.dump(manifest,manifestfile)
+        initscript=os.path.join(curdir,'script/loaderscript.sh')
+        with open(initscript,'w+') as start:
+            start.write('sh '+manifest['init']+';sh '+manifest['verification'])
         if self.checkpkgENV()['os'].lower()=='windows':
-            ret=subprocess.run(winexecpath+' '+pkgpath)
+            winexecpath=os.path.join(curdir,'dependency/dos2unix/dos2unix.exe')
+            ret=subprocess.run(winexecpath+' '+initscript)
             if ret.returncode == 0:
                 return True
         return False
