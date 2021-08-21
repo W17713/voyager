@@ -3,11 +3,13 @@ import execution_seq
 from Remoteserver import Remoteserver
 import sys
 import os
+import json
 
 def addIPs():
     print('Welcome to voyager.\nChoose an option to add IPs\n')
     print('1.Add range of IPs\n')
     print('2.Add non range hosts from list\n')
+    print('3.Load existing host group\n')
     stepone=input()
     if stepone==str(1):
         steponeInput=input('Add IP range as follows FirstNodeIP-LastNodeID e.g 10.249.249.10-20\n')
@@ -25,18 +27,48 @@ def addIPs():
         steptwoOut=execution_seq.addIPrandom(iplist)
         if steptwoOut=='successful':
             print('IPs were added succesfully\n')
-    return execution_seq.getIPs()
+    elif stepone==str(3):
+        list=os.listdir(os.path.join(os.getcwd(),'asset/hosts'))
+        #print(list)
+        if len(list) != 0:
+            print('Choose host group from list\n')
+            for i,j in enumerate(list):
+                print(str(i+1)+'. '+j)
+            hostgrpid=int(input())
+            hostgrpdict= execution_seq.loadHosts(list[hostgrpid-1])
+        else:
+            nohoststep=input('There are no existing host groups\n')
+        return True,hostgrpdict
+    return False,execution_seq.getIPs()
 
-def getCredentials():
-    username=input('Please enter the username for servers\n').strip()
-    password=input('Please enter the password for servers\n').strip()
-    return username,password
+def getCredentials(hosts):
+    hostdict={}
+    passtype=input('Choose 1 to use the same username and password for all hosts\nChoose 2 to enter different usernames and passwords for each\n')
+    if passtype == str(1):
+        username=input('Please enter the username for servers\n').strip()
+        password=input('Please enter the password for servers\n').strip()
+        #append same cred for all hosts in hostlist 
+        for host in hosts:
+            hostdict[host]={'username':username,'password':password} 
+        hostgrpname=input('Enter name of host group \n')
+    elif int(passtype) == 2:
+        #add credentials to host dictionary
+        for host in hosts:
+            username=input('Enter username for '+host+'\n').strip()
+            password=input('Enter password for '+host+'\n').strip()
+            hostdict[host]={'username':username,'password':password}  
+        hostgrpname=input('Enter name of host group \n')
+    else:
+        ('Choose between 1 and 2\n')
+    hostsfile=open(os.path.join(os.getcwd(),'asset/'+hostgrpname+'.json'),'w')
+    json.dump(hostdict,hostsfile)
+    hostsfile.close()
+    return hostdict
 
-def remoteTests(username,password):
-    iplist=execution_seq.getIPs()
-    for i in iplist:
+def remoteTests(hosts):
+    for id,host in hosts.items():
         print('Running tests on remote servers now\n')
-        rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
+        rms=Remoteserver(id.strip(),22,host['username'].strip(),host['password'].strip())
         pingstatus,pingout=rms.ping()
         #print(pingout)
         if pingstatus:
@@ -77,7 +109,7 @@ def choosePackage():
         
     return chosenpkg
 
-def shipPackage(pkg):
+def shipPackage(pkg,hosts):
     answer=input('Do you want to deploy package? (Y/N)').lower()
     answerOptions=['Yes','No']
     answers=[[],[]] #list os lists to store variations or yes and no
@@ -88,10 +120,10 @@ def shipPackage(pkg):
         answers[h].append(i.lower())
         answers[h].append(i.upper())
     if answer in answers[0]: #if answer is any form of yes [upper,lower,Y,Capitalized]
-        iplist=execution_seq.getIPs()
-        for i in iplist:
+        #iplist=execution_seq.getIPs()
+        for id,host in hosts.items():
             print('Deploying package to remote servers now\n')
-            rms=Remoteserver(i.strip(),22,username.strip(),password.strip())
+            rms=Remoteserver(id.strip(),22,host['username'].strip(),host['password'].strip())
             rms.deployPackage(pkg)
     elif answer in answers[1]: #if answer is any form on no
         response=input('Enter a yes to deploy package or q to quit.\n')
@@ -111,13 +143,16 @@ def shipPackage(pkg):
 
 
 if __name__=="__main__":
-    IPs=addIPs()
+    status,IPs=addIPs()
     if len(IPs) !=0:
-        username,password=getCredentials()
-        testresults,msg=remoteTests(username,password)
+        if status == False: #if host group does not exist, get credentials 
+            hosts=getCredentials(IPs)
+        else:
+            hosts=IPs #if host group exists, pass directly to remote tests
+        testresults,msg=remoteTests(hosts)
     if testresults:
         pkg=choosePackage()
-        shipPackage(pkg)
+        shipPackage(pkg,hosts)
     else:
         print('Tests failed')
 

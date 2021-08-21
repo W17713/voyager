@@ -1,5 +1,8 @@
+from posixpath import curdir
 import re
 import os
+import json
+
 IPlistfile='asset\IPlist.txt'
 def addIPrange(IPstring):
     IP=re.search(r'(\d*\.\d*\.\d*\.)(\d*)-(\d*)',IPstring) #[\d*]
@@ -24,6 +27,13 @@ def getIPs():
     with open(os.path.join(currentdir,IPlistfile),'r') as ipsfile:
         iplist=ipsfile.readlines()
     return iplist
+
+def loadHosts(hostgrpname):
+    curdir=os.getcwd()
+    with open(os.path.join(curdir,os.path.join('asset/hosts',hostgrpname)),'r') as hostsfile:
+        hostdict=json.load(hostsfile)
+    return hostdict
+
 
 
 
