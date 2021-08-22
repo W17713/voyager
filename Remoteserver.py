@@ -58,7 +58,7 @@ class Remoteserver:
             sftp.chdir('/home/'+self.username+'/Maildir/cur')
             remotedir=sftp.getcwd()
             #print('remotedir below ')
-            testfilename='asset\onefile.txt'
+            testfilename='asset/onefile.txt'
             fileattributes=sftp.put(os.path.join(curdir,testfilename),remotedir+'/onefile.txt')
             #print(remotedir)
             if fileattributes.st_uid:
@@ -96,6 +96,8 @@ class Remoteserver:
         script=pkg2deploy(scriptpath)
         scriptattr=script.getprops()
         pkgdir=os.path.join('pkg',sourcedir)
+        p=pkg2deploy(pkgdir)
+        p.preppkg()
         #print('pkg dir '+pkgdir)
         dir=os.path.join(curdir,pkgdir)
         pkgs=os.listdir(dir)
@@ -122,8 +124,18 @@ class Remoteserver:
             #change to multithreading later
             for pkg in pkglist:
                 try:
+                    if os.stat(pkg['path']).st_size/(1024*1024) >= 25: #if size greater than 25MB, compress file before transfer
+                        print(os.stat(pkg['path']).st_size/(1024*1024))
+                        print(pkg['path'])
+                        heavypkg=pkg2deploy(pkg['path'])
+                        comppath,pkgname=heavypkg.box()
+                        print('moving bricks...\n'+comppath)
+                        pkgattributes=sftp.put(comppath,remotedir+'/'+pkgname)
+                    else:
+                        pkgname=pkg['name']
+                        pkgattributes=sftp.put(pkg['path'],remotedir+'/'+pkgname)
                     print('deploying '+pkg['name']+' to '+self.host+'\n')
-                    pkgattributes=sftp.put(pkg['path'],remotedir+'/'+pkg['name'])
+                    
                 except Exception as sftpexp:
                     print(sftpexp)
             #ssh to remote machine to run scripts

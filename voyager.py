@@ -106,9 +106,8 @@ def choosePackage():
         chosenpkg=packages[option-1]
     else:
         inp=input('Choose package again. Your option is not in the list\n')
-        
     return chosenpkg
-
+    
 def shipPackage(pkg,hosts):
     answer=input('Do you want to deploy package? (Y/N)').lower()
     answerOptions=['Yes','No']

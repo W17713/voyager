@@ -30,20 +30,23 @@ class Pkg:
 
     def box(self):
         #zip package
-        cwd=os.getcwd()
-        pkgpath=os.path.join(cwd,'pkg')
+        #cwd=os.getcwd()
+        pkg=os.path.split(self.packagepath)
+        '''os.path.join(cwd,'pkg')
         pkg=os.path.join(pkgpath,self.packagename)
         filestats=os.stat(pkg)
         self.packagesize=filestats/(1024*1024)
-        
+        print(self.packagesize)'''
         pkgenvironment=self.checkpkgENV()
-        if pkgenvironment['os'].lower() == 'linux':
-            os.chdir(pkgpath)
+        os.chdir(pkg[0])
+        subprocess.run('tar -zcvf '+self.packagename.strip()+'.tar.gz '+self.packagepath,capture_output=True)
+        '''if pkgenvironment['os'].lower() == 'linux':
             subprocess.run('tar -zcvf '+self.packagename+'.tar.gz '+pkg,capture_output=True)
         elif pkgenvironment['os'].lower() == 'windows':
-            os.chdir(pkgpath)
-            subprocess.run('compact /c '+pkg+' /I /Q')
+            subprocess.run('compact /c '+pkg+' /I /Q')'''
             #run windows archiving
+        newpath=os.path.join(pkg[0],self.packagename.strip()+'.tar.gz')
+        return newpath,self.packagename+'.tar.gz'.strip()
     
     def getprops(self): 
         pkgprops={}
